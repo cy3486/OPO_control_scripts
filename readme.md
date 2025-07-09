@@ -10,3 +10,6 @@
 * it doesn't matter if PM100D returns some nan power values, the code will be normal after some times, it is a bug, but I don't know how to fix it
 * pip install pythonnet, NEVER pip install clr (used in the stage controller code). 
 * my pip packages are old, newer versions of requirements.txt should work as well. 
+
+## SHG_motor_control
+as u see..
