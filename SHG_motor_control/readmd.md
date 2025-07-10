@@ -15,3 +15,8 @@
 
 This is equivalent to passing the wavelength returned by the spectrometer to the function
 The angle value calculated by the function is then passed to the motor
+
+## todo
+* add a limitation to the input wavelength
+* add a stop button
+* delete the old readme above, add some new introduction 
