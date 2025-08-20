@@ -1,15 +1,16 @@
 # the stage move from 0 to the "target position" at a step of "step", the stage wait for "sleeptime" seconds after each step
 # before each move loop, the stage is homed (initialized).
-# in line 34, enter your device's serial number
 
 import os
 import time
 import sys
 import clr
 
-target_pos = 100
-step  = 20
+target_pos = -485
+step  = -2
 sleeptime = 0.5
+# serial_no = str("112508985")  # Replace this line with your device's serial number
+serial_no = str("112000001")  # Replace this line with your device's serial number
 
 # Add References to .NET libraries
 current_dir = os.path.dirname(os.path.abspath(__file__))  # get current path
@@ -25,14 +26,14 @@ from Thorlabs.MotionControl.GenericPiezoCLI.Piezo import *
 
 def main():
     # Uncomment this line if you are using Simulations
-    # SimulationManager.Instance.InitializeSimulations()
+    SimulationManager.Instance.InitializeSimulations()
 
     try:
         # init begin
         # Build device list so that the library can find yours
         DeviceManagerCLI.BuildDeviceList()
         # create new device
-        serial_no = str("*********")  # Replace this line with your device's serial number
+        # serial_no = str("112508985")  # Replace this line with your device's serial number
         device = InertiaStageController.CreateInertiaStageController(serial_no)
 
         # Connect, begin polling, and enable
@@ -89,6 +90,6 @@ def main():
         print(e)
 
     # Uncomment this line if you are using Simulations
-    # SimulationManager.Instance.UninitializeSimulations()
+    SimulationManager.Instance.UninitializeSimulations()
 if __name__ == "__main__":
     main()

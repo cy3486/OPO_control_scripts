@@ -6,7 +6,7 @@ from scipy.signal import find_peaks
 
 # read alldata.csv file
 # data = pd.read_csv('saved_data.csv')
-data = pd.read_csv('etalon2.csv')  # change to your actual file name
+data = pd.read_csv('saved_data.csv')  # change to your actual file name
 
 # suppose etalon2.csv has two columns, 'x' and 'y'
 x = data['Wavelength (nm)']

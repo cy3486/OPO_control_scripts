@@ -113,7 +113,7 @@ while True:
     
         # chanve to the actual data name
         x = data['Wavelength (nm)']
-        y = data['Intensity']
+        y = data['Intensity (a. u.)']
 
         # peak_ind, _ = find_peaks(y, 0.01)
 
