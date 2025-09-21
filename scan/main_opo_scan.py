@@ -30,7 +30,7 @@ pythoncom.CoInitialize()
 target_pos = 40
 step  = 2
 sleeptime = 0.5
-serial_no = str("112000001")  # Replace this line with your device's serial number
+serial_no = str("112426310")  # Replace this line with your device's serial number
 ## 355 OPO 112508985
 ## 532 OPO 112426310
 csv_filename = "532_scan_data.csv"
@@ -113,7 +113,7 @@ plt.tight_layout()
 try:
     # init begin    
     # Uncomment this line if you are using Simulations
-    SimulationManager.Instance.InitializeSimulations()
+    # SimulationManager.Instance.InitializeSimulations()
     # Build device list so that the library can find yours
     DeviceManagerCLI.BuildDeviceList()
     # create new device
@@ -184,13 +184,13 @@ try:
         power1.append(power1_val)
         power2.append(power2_val)
 
-        csvwriter.writerow([t, pos, Wavelength, Frequency, Linewidth, power1, power2])
+        csvwriter.writerow([t, pos, Wavelength, Frequency, Linewidth, power1_val, power2_val])
         csvfile.flush()  # 及时写入磁盘
 
         # time.sleep(0.1)
 
         # 更新曲线数据
-        data_list = [position, wavelengths, frequencies, linewidths, power1, power2]
+        data_list = [position, wavelengths, frequencies, linewidths, power1_val, power2_val]
         for line, data in zip(lines, data_list):
             line.set_data(times, data)
         for ax in axs:
@@ -208,4 +208,4 @@ except Exception as e:
     print(e)
 
 # Uncomment this line if you are using Simulations
-SimulationManager.Instance.UninitializeSimulations()
+# SimulationManager.Instance.UninitializeSimulations()
