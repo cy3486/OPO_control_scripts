@@ -5,7 +5,8 @@ scan the BBO motor while plotting and recordding:
 3. wavelength
 4. frequency
 5. linewidth
-6. power
+6. power1
+7. power2
 and save to csv
 """
 import sys
@@ -13,22 +14,26 @@ import os
 import time
 import csv
 import ctypes
-from ctypes import byref, create_string_buffer, c_bool, c_int, c_int16, c_double, c_uint32
+from ctypes import byref, create_string_buffer, c_bool, c_int, c_int16, c_double, c_uint32, c_char_p
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.signal import find_peaks
 from scipy.stats import norm
 from datetime import datetime
-import clr      # pip install pythonnet, NEVER pip install clr
+import clr      # pip install pythonnet, NEVER pip install 
+import pythoncom
+pythoncom.CoInitialize()
 
 ## user settings
 #### scan setting
-target_pos = 2000
+target_pos = 40
 step  = 2
 sleeptime = 0.5
-serial_no = str("*********")  # Replace this line with your device's serial number
-csv_filename = "data.csv"
+serial_no = str("112000001")  # Replace this line with your device's serial number
+## 355 OPO 112508985
+## 532 OPO 112426310
+csv_filename = "532_scan_data.csv"
 
 # power meter begin
 from TLPMX import TLPMX, TLPM_DEFAULT_CHANNEL
@@ -61,22 +66,23 @@ if wlmData.dll.GetWLMCount(0) == 0:
     sys.exit(1)
 
 ## powermeter
-# 查找设备
+# 查找设备数量
 tlPM = TLPMX()
 deviceCount = c_uint32()
 tlPM.findRsrc(byref(deviceCount))
-if deviceCount.value == 0:
-    print("未找到功率计设备")
-    exit(1)
-
 resourceName = create_string_buffer(1024)
-tlPM.getRsrcName(c_int(0), resourceName)
-tlPM.open(resourceName, c_bool(True), c_bool(True))
+pm_names = []
+for i in range(0, deviceCount.value):
+    tlPM.getRsrcName(c_int(i), resourceName)
+    pm_names.append(c_char_p(resourceName.raw).value)
+    print("Resource name of device", i, ":", pm_names[i])
 
-# 设置参数
-tlPM.setWavelength(c_double(632.5), TLPM_DEFAULT_CHANNEL)
-tlPM.setPowerAutoRange(c_int16(1), TLPM_DEFAULT_CHANNEL)# int16(1) -> 自动范围启用
-tlPM.setPowerUnit(c_int16(0), TLPM_DEFAULT_CHANNEL)# int16(0) -> 功率单位设置为瓦特
+meters = []
+for name in pm_names:
+    meter = TLPMX()
+    meter.open(name, c_bool(True), c_bool(True))
+    meters.append(meter)
+
 
 
 # init variables
@@ -85,18 +91,19 @@ position = []
 wavelengths = []
 frequencies = []
 linewidths = []
-powers = []
+power1 = []
+power2 = []
 
 write_header = not os.path.exists(csv_filename)
 csvfile = open(csv_filename, "a", newline='')
 csvwriter = csv.writer(csvfile)
 if write_header:
-    csvwriter.writerow(["Time(s)", "Position", "Wavelength(nm)", "Frequency(THz)", "Linewidth(THz)", "Power(W)"])
+    csvwriter.writerow(["Time(s)", "Position", "Wavelength(nm)", "Frequency(THz)", "Linewidth(THz)", "Power1(W)", "Power2(W)"])
 
 plt.ion()  # 打开交互模式
-fig, axs = plt.subplots(5, 1, figsize=(8, 10), sharex=True)
+fig, axs = plt.subplots(6, 1, figsize=(8, 10), sharex=True)
 lines = []
-for ax, ylabel in zip(axs, ['Position (steps)', 'Wavelength (nm)', 'Frequency (THz)', 'Linewidth (THz)', 'Power (W)']):
+for ax, ylabel in zip(axs, ['Position (steps)', 'Wavelength (nm)', 'Frequency (THz)', 'Linewidth (THz)', 'Power1 (W)', 'Power2 (W)']):
     line, = ax.plot([], [])
     ax.set_ylabel(ylabel)
     lines.append(line)
@@ -106,7 +113,7 @@ plt.tight_layout()
 try:
     # init begin    
     # Uncomment this line if you are using Simulations
-    # SimulationManager.Instance.InitializeSimulations()
+    SimulationManager.Instance.InitializeSimulations()
     # Build device list so that the library can find yours
     DeviceManagerCLI.BuildDeviceList()
     # create new device
@@ -141,6 +148,7 @@ try:
     start_time = time.time()
       
     device.Home(5000)
+    print("Homed")
     while abs(openLoopPosition) < abs(target_pos):
         openLoopParams.StepSize = openLoopPosition + step
         device.SetOpenLoopMoveParameters(openLoopParams)
@@ -153,9 +161,13 @@ try:
         pos = device.GetCurrentPosition()
 
         ## power
-        Power = c_double()
-        tlPM.measPower(byref(Power), TLPM_DEFAULT_CHANNEL)
-        Power = Power.value
+        power_values = []
+        for meter in meters:
+            power = c_double()
+            meter.measPower(byref(power), TLPM_DEFAULT_CHANNEL)
+            power_values.append(power.value)
+        power1_val = power_values[0] if len(power_values) > 0 else None
+        power2_val = power_values[1] if len(power_values) > 1 else None
 
         ## 
         t = time.time() - start_time
@@ -169,15 +181,16 @@ try:
         frequencies.append(Frequency)
         wavelengths.append(Wavelength)
         linewidths.append(Linewidth)
-        powers.append(Power)
-           
-        csvwriter.writerow([t, pos, Wavelength, Frequency, Linewidth, Power])
+        power1.append(power1_val)
+        power2.append(power2_val)
+
+        csvwriter.writerow([t, pos, Wavelength, Frequency, Linewidth, power1, power2])
         csvfile.flush()  # 及时写入磁盘
 
         # time.sleep(0.1)
 
         # 更新曲线数据
-        data_list = [position, wavelengths, frequencies, linewidths, powers]
+        data_list = [position, wavelengths, frequencies, linewidths, power1, power2]
         for line, data in zip(lines, data_list):
             line.set_data(times, data)
         for ax in axs:
@@ -195,4 +208,4 @@ except Exception as e:
     print(e)
 
 # Uncomment this line if you are using Simulations
-# SimulationManager.Instance.UninitializeSimulations()
+SimulationManager.Instance.UninitializeSimulations()
